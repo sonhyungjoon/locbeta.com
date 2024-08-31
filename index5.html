@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>버스 실시간 위치 및 도착 시간</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/leaflet.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/leaflet.js"></script>
+    <style>
+        #map { height: 60vh; }
+        #info { position: absolute; top: 10px; right: 10px; background: white; padding: 10px; }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+    <div id="info">
+        <h3>버스 도착 시간 정보</h3>
+        <ul id="busInfoList"></ul>
+    </div>
+    <script>
+        const map = L.map('map').setView([37.5665, 126.9780], 12); // 서울 시청 기준
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+
+        const stopMarkers = [
+            L.marker([37.510284, 127.059226]).addTo(map).bindPopup("정류장1"),
+            L.marker([37.534075, 126.987527]).addTo(map).bindPopup("정류장2"),
+            L.marker([37.582360, 126.981044]).addTo(map).bindPopup("정류장3")
+        ];
+
+        let busMarker;
+
+        function updateBusInfo() {
+            fetch('index2.html')
+            .then(response => response.json())
+            .then(data => {
+                const { busPosition, busInfo } = data;
+
+                if (busMarker) {
+                    busMarker.setLatLng([busPosition.lat, busPosition.lon]);
+                } else {
+                    busMarker = L.marker([busPosition.lat, busPosition.lon]).addTo(map).bindPopup("버스 현재 위치");
+                }
+                map.setView([busPosition.lat, busPosition.lon], 14);
+
+                const busInfoList = document.getElementById('busInfoList');
+                busInfoList.innerHTML = "";
+                busInfo.forEach(info => {
+                    const listItem = document.createElement('li');
+                    listItem.textContent = `${info.stopName}: 약 ${info.eta.toFixed(2)}분 후 도착`;
+                    busInfoList.appendChild(listItem);
+                });
+            })
+            .catch(error => console.error('Error:', error));
+        }
+
+        // 실시간 업데이트
+        setInterval(updateBusInfo, 5000); // 5초마다 업데이트
+        updateBusInfo();
+    </script>
+</body>
+</html>
